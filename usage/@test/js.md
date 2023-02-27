@@ -1,14 +1,15 @@
 [<- Back](../index.md)
 
-## @test/js
+## @test/js.ts
 
 Test your js functions
 
 ### Usage
 
-**Required Fields:**
+**Optional Fields**
 
 -   testfile
+
     > The testfile. It should export a function or {default: function}, which should return true/false or the number of failed tests.
-    >
+    > 
     > It get's called with the directory, the .rsproj file is in.

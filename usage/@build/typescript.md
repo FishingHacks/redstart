@@ -1,14 +1,14 @@
-[<- Back](./index.md)
+[<- Back](../index.md)
 
-## @build/typescript
+## @build/typescript.ts
 
 Compile a typescript project
 
 ### Usage
 
-**Optional Fields:**
+**Optional Fields**
 
--   tsFilePath
+-   configFile
 
     > The path to the configuration file for the TypeScript Compiler (usually tsconfig.json)
 
@@ -21,4 +21,5 @@ Compile a typescript project
     > The Directory the compiled files get put in
 
 -   allowJSFiles
+
     > Allow javascript files to be compiled (true/false)

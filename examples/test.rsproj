@@ -1,9 +1,13 @@
---stoponerr: true
--- dbgprint: true
-@test/js, echo
+settings {
+    dbgprint: true
+}
 
-[@test/js]
-testfile: test.js
+test {
+    @test/js {
+        testfile: "test.js"
+    }
 
-[echo]
-message: Hi!
+    echo {
+        message: "Hi!"
+    }
+}

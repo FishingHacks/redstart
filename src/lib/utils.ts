@@ -1,4 +1,6 @@
-import { createSpinner as _createSpinner } from "nanospinner";
+import { lstat, readdir, readlink } from 'fs/promises';
+import { createSpinner as _createSpinner } from 'nanospinner';
+import { join } from 'path';
 
 /**
  * @license GPL3
@@ -8,9 +10,9 @@ import { createSpinner as _createSpinner } from "nanospinner";
 export const is = {
     exists: (v: any) => v !== undefined,
     set: (v: any) => is.exists(v) && v !== null,
-    object: (v: any) => v !== null && typeof v === 'object',
-    arr: (v: any) => is.object(v) && v instanceof Array,
-    str: (v: any) => typeof v === 'string',
+    object: (v: any): v is object => v !== null && typeof v === 'object',
+    arr: (v: any): v is any[] => is.object(v) && v instanceof Array,
+    str: (v: any): v is string => typeof v === 'string',
     json: (v: any) => {
         if (!is.str(v)) return false;
         try {
@@ -22,7 +24,39 @@ export const is = {
     },
     processError: (v: { error?: Error; status: number | null }) =>
         v.error || v.status !== 0,
+    boolean: (v: any): v is boolean => typeof v === 'boolean',
 };
+
+type CheckerType = Record<keyof typeof is, () => CheckerType> & {
+    pipe: (cb: (v: any) => boolean) => CheckerType;
+    isValid: boolean;
+};
+
+export function isChecker(value: any): CheckerType {
+    let valid = true;
+
+    const a: Partial<CheckerType> = {};
+    a.pipe = function pipe(cb: (v: any) => boolean) {
+        if (valid && !cb(value)) valid = false;
+        return a as CheckerType;
+    };
+    Reflect.defineProperty(a, 'isValid', {
+        get() {
+            return valid;
+        },
+        set(v) {
+            throw new Error("Can't set isValid");
+        },
+    });
+    for (const k in is) {
+        a[k as keyof typeof is] = function () {
+            if (valid && !is[k as keyof typeof is](value)) valid = false;
+            return a as CheckerType;
+        };
+    }
+
+    return a as CheckerType;
+}
 
 export function deepEqual(obj1: any, obj2: any) {
     if (!is.set(obj1) || !is.set(obj2)) return false;
@@ -87,88 +121,35 @@ export function escapeString(
     return string;
 }
 
-export function createTimeTracker(text: string) {
-    const $internalObj = {
-        slices: [{ time: Date.now(), text }],
-        start: Date.now(),
-    };
-    function addTimeSlice(text: string) {
-        $internalObj.slices.push({ text, time: Date.now() });
+export function stringify(value: any): string {
+    if (value === undefined) return 'undefined';
+    else if (value === null) return 'null';
+    else if (typeof value === 'object') {
+        try {
+            return JSON.stringify(value);
+        } catch {}
     }
-    function getOutput(
-        asTable: boolean | undefined = false,
-        printFunction?: (text: string, timeInSeconds: string) => string
-    ) {
-        if (!printFunction)
-            printFunction = (text, time) => `${text} (${time}s)`;
+    return value.toString();
+}
 
-        if (asTable) {
-            const maxArg = {
-                Name: 'Time Taken',
-                Time: ((Date.now() - $internalObj.start)/1000).toFixed(3) + 's',
-                Start: new Date($internalObj.start).toLocaleTimeString(),
-            };
-            const args = $internalObj.slices.map(({ text, time }, i) => {
-                return {
-                    Name: text,
-                    Time:
-                        (
-                            (($internalObj.slices[i + 1]?.time || Date.now()) -
-                                time) /
-                            1000
-                        ).toFixed(3) + 's',
-                    Start: new Date(time).toLocaleTimeString(),
-                };
-            });
+export function calculateLengths<T extends string>(
+    args: Record<T, any>[],
+    names?: T[]
+): Record<T, number> {
+    const val: Record<string, number> = {};
+    if (args.length < 1 && !names)
+        throw new Error(
+            'A length of at least 1 or the names are required in order to calculate the lengths'
+        );
+    for (const k in args[0] || names) val[k] = k.length;
 
-            const maxLengths = {
-                Name: maxArg.Name.length,
-                Time: maxArg.Time.length,
-                Start: maxArg.Start.length,
-            };
-            for (const { Name, Start, Time } of args) {
-                maxLengths.Name = Math.max(Name.length, maxLengths.Name);
-                maxLengths.Start = Math.max(Start.length, maxLengths.Start);
-                maxLengths.Time = Math.max(Time.length, maxLengths.Time);
-            }
-
-            args.push({
-                Name: strMul('─', maxLengths.Name),
-                Start: strMul('─', maxLengths.Start),
-                Time: strMul('─', maxLengths.Time),
-            });
-            args.push(maxArg);
-
-            return createTable('Timings', ['Name', 'Time', 'Start'], args);
+    for (const v of args)
+        for (const k in v) {
+            const value = stringify(v[k]);
+            if (val[k] < value.length) val[k] = value.length;
         }
 
-        return (
-            'Timing:\n' +
-            $internalObj.slices
-                .map(({ text, time }, i) => {
-                    const next =
-                        i === $internalObj.slices.length - 1
-                            ? Date.now()
-                            : $internalObj.slices[i + 1].time;
-                    return !printFunction
-                        ? ''
-                        : printFunction(
-                              text,
-                              ((next - time) / 1000).toFixed(3)
-                          );
-                })
-                .filter((el) => el.length > 0)
-                .join('\n')
-        );
-    }
-    function printOutput(
-        asTable?: boolean,
-        printFunction?: (text: string, timeInSeconds: string) => string
-    ) {
-        console.log(getOutput(asTable, printFunction));
-    }
-
-    return { printOutput, getOutput, addTimeSlice };
+    return val;
 }
 
 export function strMul(s: string, i: number) {
@@ -270,7 +251,7 @@ export class TextboxBuilder {
                         acc,
                         el.replaceAll(/\x1B\[[0-9]+(;[0-9]+)*m/g, '').length
                     ),
-                stringLines[0].length || 0
+                stringLines[0]?.length || 0
             )
         );
 
@@ -348,20 +329,25 @@ export function createTable<T extends string>(
     for (const c of keys)
         str += strMul(
             '─',
-            (columnLengths[c] || 0) + 3 - (c === keys[0] ? str.length : 0)
+            ((columnLengths[c] as number | undefined) || 0) +
+                3 -
+                (c === keys[0] ? str.length : 0)
         );
     str += '┐\n';
     let i = 0;
     for (const c of keys) {
-        const length = columnLengths[c];
+        const length = (columnLengths[c] as number | undefined) || 0;
         if (str[i] === '─') str = setStrAtPos(str, i, '┬');
-        i += 3 + (length || 0);
+        i += 3 + length;
     }
 
     str += '│ ';
     for (const c of keys) {
         str += c;
-        str += strMul(' ', (columnLengths[c] || 1) - c.length);
+        str += strMul(
+            ' ',
+            ((columnLengths[c] as number | undefined) || 1) - c.length
+        );
         str += ' │ ';
     }
     str += '\n';
@@ -369,7 +355,11 @@ export function createTable<T extends string>(
     if (!differentiateLines) {
         str += '├';
         for (const c of keys) {
-            str += strMul('─', (columnLengths[c] || 1) + 2) + '┼';
+            str +=
+                strMul(
+                    '─',
+                    ((columnLengths[c] as number | undefined) || 1) + 2
+                ) + '┼';
         }
         str = str.substring(0, str.length - 1);
         str += '┤\n';
@@ -379,7 +369,11 @@ export function createTable<T extends string>(
         if (differentiateLines) {
             str += '├';
             for (const c of keys) {
-                str += strMul('─', (columnLengths[c] || 1) + 2) + '┼';
+                str +=
+                    strMul(
+                        '─',
+                        ((columnLengths[c] as number | undefined) || 1) + 2
+                    ) + '┼';
             }
             str = str.substring(0, str.length - 1);
             str += '┤\n';
@@ -391,7 +385,8 @@ export function createTable<T extends string>(
                 (columns[c]?.[i] || '') +
                 strMul(
                     ' ',
-                    (columnLengths[c] || 0) - (columns[c]?.[i] || '').length
+                    ((columnLengths[c] as number | undefined) || 0) -
+                        (columns[c]?.[i] || '').length
                 ) +
                 `${resolveDelimiter(
                     columns[c]?.[i],
@@ -413,6 +408,14 @@ export function createTable<T extends string>(
     return str;
 }
 
+export function anyToStringObj(
+    obj: Record<string, any>
+): Record<string, string> {
+    const newObject = { ...obj };
+    for (const k in obj) newObject[k] = stringify(obj[k]);
+    return newObject;
+}
+
 function resolveDelimiter(a: string | undefined, b: string | undefined) {
     let str = '';
     if (a?.endsWith('─')) str = '─┤';
@@ -427,12 +430,120 @@ function resolveDelimiter(a: string | undefined, b: string | undefined) {
 // └ ┴ ┘
 // │
 
-
 export function createSpinner(message: string) {
     const sp = _createSpinner(message);
-    sp.error = (opts?: {
-        text?: string | undefined;
-        mark?: string | undefined;
-    } | undefined) => {throw new Error(opts?.text || "Error")};
+    sp.error = (
+        opts?:
+            | {
+                  text?: string | undefined;
+                  mark?: string | undefined;
+              }
+            | undefined
+    ) => {
+        throw new Error(opts?.text || 'Error');
+    };
     return sp;
+}
+
+export function describe<T = void>(
+    start: (name: string) => () => void,
+    name: string,
+    callback: () => T
+): T {
+    const end = start(name);
+    try {
+        const returnValue = callback();
+        end();
+        return returnValue;
+    } catch (e) {
+        end();
+        throw e;
+    }
+}
+
+export async function describePromise<T = void>(
+    start: (name: string) => () => void,
+    name: string,
+    callback: () => T | Promise<T>
+): Promise<T> {
+    const end = start(name);
+    try {
+        const returnValue = await callback();
+        end();
+        return returnValue;
+    } catch (e) {
+        end();
+        throw e;
+    }
+}
+
+export function describeProvider(start: (name: string) => () => void): {
+    describePromise: <T = void>(
+        name: string,
+        callback: () => T | Promise<T>
+    ) => Promise<T>;
+    describe: <T = void>(name: string, callback: () => T) => T;
+} {
+    return {
+        describe(name, callback) {
+            return describe(start, name, callback);
+        },
+        describePromise(name, callback) {
+            return describePromise(start, name, callback);
+        },
+    };
+}
+
+export interface PaddingOptions {
+    top?: number;
+    left?: number;
+    right?: number;
+    bottom?: number;
+}
+
+export function applyPadding(str: string, padding?: PaddingOptions) {
+    return (
+        strMul('\n', padding?.top || 0) +
+        str
+            .split('\n')
+            .map(
+                (el) =>
+                    strMul(' ', padding?.left || 0) +
+                    el +
+                    strMul(' ', padding?.right || 0)
+            )
+            .join('\n') +
+        strMul('\n', padding?.bottom || 0)
+    );
+}
+export async function tree(directory: string): Promise<string[]> {
+    const to_scan = [directory];
+    const discovered_files: string[] = [];
+    while (to_scan.length > 0) {
+        const dir = to_scan.pop();
+        if (!dir) break;
+        for (let f of await readdir(dir, { withFileTypes: true })) {
+            try {
+                if (f.isSymbolicLink()) {
+                    const filepath = await resolveSymlink(join(dir, f.name));
+                    if (filepath !== null) {
+                        const stat = await await lstat(filepath);
+                        if (stat.isDirectory()) to_scan.push(filepath);
+                        if (stat.isFile()) discovered_files.push(filepath);
+                    }
+                } else if (f.isFile()) discovered_files.push(join(dir, f.name));
+                else if (f.isDirectory()) to_scan.push(join(dir, f.name));
+            } catch {}
+        }
+    }
+
+    return discovered_files;
+}
+export async function resolveSymlink(file: string): Promise<string | null> {
+    let symlink: string | null = file;
+    while (symlink !== null) {
+        if (!(await lstat(symlink)).isSymbolicLink()) return symlink;
+        else symlink = await readlink(symlink);
+    }
+    return null;
 }

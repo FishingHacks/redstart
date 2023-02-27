@@ -23,4 +23,5 @@ export default async function checkPackageManager(
     } catch (error) {
         return false;
     }
+    return false;
 }

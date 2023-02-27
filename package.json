@@ -2,7 +2,7 @@
 	"name": "redstart",
 	"version": "1.0.2",
 	"description": "A quick way to start your nodejs project 🚀",
-	"main": "index.js",
+	"main": "src/bin/main.ts",
 	"scripts": {
 		"build": "tsc"
 	},

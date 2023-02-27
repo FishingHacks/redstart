@@ -1,5 +1,5 @@
-[<- Back](./index.md)
+[<- Back](../index.md)
 
-## @init/typescript
+## @init/typescript.ts
 
 Initialize a typescript project (creates a tsconfig.json file)

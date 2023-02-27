@@ -1,6 +1,6 @@
-[<- Back](../README.md)
+[<- Back](./index.md)
 
-# Redstart Global Configuration Reference
+# RedStart Configuration
 
 - dbgprint
 > Print debuginformations about the execution of redstart

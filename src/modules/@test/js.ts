@@ -4,21 +4,20 @@
  */
 
 import { join } from 'path';
-import { is, createSpinner } from '../../lib/utils';
-import { Module } from '../../types';
+import { Module } from '../../lib/types';
+import { is, createSpinner, isChecker } from '../../lib/utils';
 
 export default {
-    validate(config, _cwd) {
-        return (
-            is.set(config.testfile) &&
-            (config.testfile.endsWith('.mjs') ||
-                config.testfile.endsWith('.js'))
-        );
+    validate({ config }) {
+        return isChecker(config.testfile)
+            .set()
+            .str()
+            .pipe((el) => el.endsWith('.mjs') || el.endsWith('.js')).isValid;
     },
-    initiate(config, _addTimeSlice, cwd) {
+    initiate({config, cwd}) {
         const testspinner = createSpinner('Loading testfile...');
         try {
-            let test = require(join(cwd, config.testfile));
+            let test = require(join(cwd, config.testfile.toString()));
             if (typeof test?.default === 'function') test = test.default; // in case test is a module
             if (!test || typeof test !== 'function')
                 return testspinner.error({ text: 'Test file not found!' });
@@ -47,4 +46,10 @@ export default {
             console.error(e);
         }
     },
+    description: 'Test your js functions',
+    optionalFields: [{
+        name: 'testfile',
+        description: 'The testfile. It should export a function or {default: function}, which should return true/false or the number of failed tests.\nIt get\'s called with the directory, the .rsproj file is in.'
+    }],
+    requiredFields: []
 } as Module;

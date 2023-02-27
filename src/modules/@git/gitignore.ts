@@ -6,35 +6,43 @@
 import chalk from 'chalk';
 import { existsSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import { Module } from '../../lib/types';
 import { is } from '../../lib/utils';
-import { Module } from '../../types';
 
 export default {
-    validate(config, cwd) {
+    validate({ config }) {
         return (
             is.set(config.language) &&
             ['javascript', 'js', 'ts', 'typescript', ''].includes(
-                config.language
-            )
+                config.language.toString()
+            ) && (!is.set || is.arr(config.additional))
         );
     },
-    initiate(config, _addTimeSlice, cwd) {
+    initiate({ config, cwd }) {
         if (existsSync(join(cwd, '.gitignore')))
             return console.warn(
                 chalk.yellowBright('[/] .gitignore already found. aborting')
             );
-        const gitignore = getGitIgnoreForLanguage(config.language);
+        const gitignore = getGitIgnoreForLanguage(config.language as string);
         if (config.additional) {
             gitignore.push(
-                ...config.additional
-                    .split(',')
-                    .map((el) => el.trim())
+                ...(config.additional as any[])
+                    .map((el) => el.toString().trim())
                     .filter((el) => el.length > 0)
                     .filter((el) => !gitignore.includes(el))
             );
         }
         writeFileSync(join(cwd, '.gitignore'), gitignore.join('\n'));
     },
+    description: 'Configure the .gitignore file',
+    requiredFields: [{
+        name: 'language',
+        description: 'The language you intent on writing your program in. It will select the preset for the language. Leave empty to use none.\nSupported values: javascript, js, typescript, ts'
+    }],
+    optionalFields: [{
+        name: 'additional',
+        description: 'The additional .gitignore values. Type: Array\nExample:\nadditional: "*.mjs" ".rscache"'
+    }]
 } as Module;
 
 function getGitIgnoreForLanguage(language: string) {

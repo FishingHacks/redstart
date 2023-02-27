@@ -8,14 +8,19 @@ import { sync as spawnSync } from 'cross-spawn';
 import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
+import { Module } from '../../lib/types';
 import { is } from '../../lib/utils';
-import { Module } from '../../types';
 
 export default {
-    validate(config, _cwd) {
-        return is.set(config.mainFile) && is.str(config.mainFile);
+    validate({ config }) {
+        return (
+            is.set(config.mainFile) &&
+            is.str(config.mainFile) &&
+            (!is.set(config.arguments) || is.arr(config.arguments)) &&
+            (!is.set(config.envFile) || is.str(config.envFile))
+        );
     },
-    async initiate(config, _addTimeSlice, cwd) {
+    async initiate({ start, config, cwd }) {
         let additionalEnv: Record<string, string> = {};
         if (is.set(config.envFile) && is.str(config.envFile)) {
             if (existsSync(join(cwd, config.envFile))) {
@@ -34,14 +39,18 @@ export default {
                     });
             }
         }
+        const end = start('running the program');
         const runProcess = spawnSync(
             'node',
             [
                 config.mainFile,
-                ...(config.arguments?.split(',').map((el) => el.trim()) || []),
+                ...((config.arguments as any[]).map((el) =>
+                    el.toString().trim()
+                ) || []),
             ],
             { cwd, env: { ...process.env, ...additionalEnv } }
         );
+        end();
         if (runProcess.error || runProcess.status !== 0) {
             console.error(chalk.redBright('[!] Error: Exection failed!'));
             return console.error(
@@ -60,4 +69,21 @@ export default {
                 .join('\n')
         );
     },
+    description: 'Run your node application',
+    requiredFields: [
+        {
+            name: 'mainFile',
+            description: 'The mainfile. It get\'s executed on run',
+        },
+    ],
+    optionalFields: [
+        {
+            name: 'arguments',
+            description: 'The arguments to the program, you\'re running. Type: Array',
+        },
+        {
+            name: 'envFile',
+            description: 'The environment file. It get\'s parsed and passed into the environment.\nFileformat: .env',
+        },
+    ],
 } as Module;

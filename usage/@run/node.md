@@ -1,23 +1,25 @@
 [<- Back](../index.md)
 
-## @run/node.md
+## @run/node.ts
 
 Run your node application
 
 ### Usage
 
-**Required Fields:**
+**Required Fields**
 
 -   mainFile
-    > The mainfile. It is the first one, that get's executed
 
-**Optional Fields:**
+    > The mainfile. It get's executed on run
+
+**Optional Fields**
+
+-   arguments
+
+    > The arguments to the program, you're running. Type: Array
 
 -   envFile
 
     > The environment file. It get's parsed and passed into the environment.
-    >
+    > 
     > Fileformat: .env
-
--   arguments
-    > The arguments to the program, you're running. Type: Array

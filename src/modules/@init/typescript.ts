@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { sync } from 'cross-spawn';
+import { Module } from '../../lib/types';
 import { is } from '../../lib/utils';
-import { Module } from '../../types';
 
 export default {
     validate: () => true,
@@ -10,4 +10,7 @@ export default {
             console.error(chalk.redBright('[!] TSC is not installed'));
         else console.log(chalk.greenBright('[+] Initialized typescript'));
     },
+    description: 'Initialize a typescript project (creates a tsconfig.json file)',
+    optionalFields: [],
+    requiredFields: [],
 } as Module;

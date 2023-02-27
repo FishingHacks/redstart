@@ -2,94 +2,73 @@
  * @license GPL3
  * @author FishingHacks <https://github.com/FishingHacks>
  */
-
-import { Module } from '../../types';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
-import path, { join } from 'path';
-import { is, createSpinner } from '../../lib/utils';
+import {
+    createSpinner,
+    describeProvider,
+    isChecker,
+} from '../../lib/utils';
 import chalk from 'chalk';
 import checkPackageManager from '../../lib/checkPackageManager';
 
 import { sync as spawnSync } from 'cross-spawn';
+import { Module } from '../../lib/types';
 
 export default {
-    validate(config) {
-        return (
-            is.set(config.packages) &&
-            is.set(config.language) &&
-            is.set(config.packageManager) &&
-            ['yarn', 'pnpm', 'npm'].includes(config.packageManager) &&
-            is.set(config.mainFile)
-        );
+    validate({ config }) {
+        return isChecker(config.packageManager)
+            .set()
+            .str()
+            .pipe((el) => ['yarn', 'pnpm', 'npm'].includes(el)).isValid;
     },
-    async initiate(config, addTimeSlice, cwd, redstartConfig) {
-        addTimeSlice('Checking package manger');
+    async initiate({ start, config, cwd }) {
+        const { describe, describePromise } = describeProvider(start);
 
-        console.log(chalk.green(`[/] Using ${config.packageManager}`));
-        const pmSpinner = createSpinner('Checking package manager...');
-        pmSpinner.start();
-        const isInstalled = await checkPackageManager(
-            config.packageManager as 'npm' | 'yarn' | 'pnpm'
-        );
-        if (!isInstalled) {
-            pmSpinner.error({ text: 'Package manager not installed!' });
-            return;
-        }
-        pmSpinner.success({ text: 'Package manager checked!' });
-
-        console.log(chalk.green(`[+] Using ${config.language}`));
-        console.log(chalk.green(`[+] Main file: ${config.mainFile}`));
-        const filePath = path.resolve(cwd, config.mainFile);
-
-        addTimeSlice('Creating main file');
-        if (!existsSync(filePath)) {
-            mkdirSync(join(filePath, '..'), { recursive: true });
-            writeFileSync(
-                filePath,
-                'function main() {\n    console.log("Hello, World!");\n\n    return 0;\n}\n\ntry {\n    const exitCode = main();\n    process.exit(exitCode || 0);\n} catch (e) {\n    console.error("[!] Error:");\n    console.error(e);\n    process.exit(1);\n}'
+        await describePromise('Checking package manger', async () => {
+            console.log(chalk.green(`[/] Using ${config.packageManager}`));
+            const pmSpinner = createSpinner('Checking package manager...');
+            pmSpinner.start();
+            const isInstalled = await checkPackageManager(
+                config.packageManager as 'npm' | 'yarn' | 'pnpm'
             );
-        }
-
-        const packages = config.packages
-            .split(',')
-            .map((el) => el.trim())
-            .filter((el) => el.length > 0);
-        console.warn(
-            chalk.yellow(`[/] Installing packages ${packages.join(', ')}`)
-        );
+            if (!isInstalled) {
+                pmSpinner.error({ text: 'Package manager not installed!' });
+                return;
+            }
+            pmSpinner.success({ text: 'Package manager checked!' });
+        });
 
         const packageSpinner = createSpinner('Installing packages...');
         packageSpinner.start();
-        const packageManager = config.packageManager;
-        const initArgs = `init${packageManager != 'pnpm' ? ' -y' : ''}`.split(
-            ' '
-        );
+        const packageManager = config.packageManager as 'yarn' | 'pnpm' | 'npm';
 
-        addTimeSlice('Initializing package.json');
-        packageSpinner.update({ text: 'Initializing package.json' });
-        spawnSync(packageManager, initArgs, {
-            cwd,
-        });
+        describe('Installing packages', () => {
+            packageSpinner.update({ text: 'Installing packages' });
+            const packageManagerArgs = [
+                packageManager === 'yarn' ? 'add' : 'install',
+            ];
+            const packageManagerProcess = spawnSync(
+                `${packageManager}`,
+                packageManagerArgs,
+                {
+                    cwd,
+                }
+            );
 
-        addTimeSlice('Installing packages');
-        packageSpinner.update({ text: 'Installing packages' });
-        const packageManagerArgs = ['add', ...packages];
-        const packageManagerProcess = await spawnSync(
-            `${packageManager}`,
-            packageManagerArgs,
-            {
-                cwd,
+            if (packageManagerProcess.status !== 0) {
+                packageSpinner.error({ text: 'Failed to install packages!' });
+
+                return;
             }
-        );
 
-        if (packageManagerProcess.status !== 0) {
-            packageSpinner.error({ text: 'Failed to install packages!' });
+            packageSpinner.success({ text: 'Packages installed!' });
 
-            return;
-        }
-
-        packageSpinner.success({ text: 'Packages installed!' });
-
-        console.log(chalk.green('[+] Initialized project successfully!'));
+            console.log(chalk.green('[+] Initialized project successfully!'));
+        });
     },
+    description: 'Install node packages',
+    optionalFields: [],
+    requiredFields: [{
+        name: 'packageManager',
+        description: 'The package manager to use. Either yarn, pnpm or npm'
+    }]
 } as Module;

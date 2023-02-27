@@ -1,0 +1,23 @@
+settings {
+    dbgprint: true
+}
+
+build {
+    @install/node {
+        packageManager: "pnpm"
+    }
+
+    echo {
+        message: "Hello, World! This should be followed by nothing"
+        color: "aqua"
+    }
+
+    @git/gitignore {
+        language: "ts"
+        additional: "test/"
+    }
+
+    @test/js {
+        testfile: "./test.js"
+    }
+}

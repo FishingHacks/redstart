@@ -4,10 +4,10 @@
  */
 
 import chalk from 'chalk';
-import { is } from '../lib/utils';
-import { Module } from '../types';
+import { Module } from '../lib/types';
+import { is, isChecker } from '../lib/utils';
 
-const translator = {
+const translator: Record<string, chalk.Chalk> = {
     red: chalk.redBright,
     green: chalk.greenBright,
     yellow: chalk.yellowBright,
@@ -19,20 +19,30 @@ const translator = {
 };
 
 export default {
-    validate(config) {
+    validate({config}) {
         return (
             is.set(config.message) &&
             is.str(config.message) &&
-            config.message !== ''
+            config.message !== '' &&
+            (!is.set(config.color) || isChecker(config.color).set().str().pipe(el => translator[el] !== undefined).isValid)
         );
     },
-    initiate(config) {
-        if (config.color && Object.keys(translator).includes(config.color))
+    initiate({ config }) {
+        if (config.color && Object.keys(translator).includes(config.color.toString()))
             return console.log(
-                translator[config.color as keyof typeof translator](
+                translator[config.color as string](
                     config.message
                 )
             );
         else return console.log(config.message);
     },
+    description: 'Write to stdout',
+    optionalFields: [{
+        name: 'color',
+        description: 'The color of the message\nAvailable options: red, green, yellow, blue, white, black, purple and aqua'
+    }],
+    requiredFields: [{
+        name: 'message',
+        description: 'The message to write'
+    }]
 } as Module;

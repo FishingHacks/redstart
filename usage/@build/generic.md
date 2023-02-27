@@ -1,17 +1,19 @@
 [<- Back](../index.md)
 
-## @build/generic
+## @build/generic.ts
 
 Use any build system to build your application.
 
 ### Usage
 
-**Required Fields:**
+**Required Fields**
 
 -   command
-    > The name of the compiler (iex. g++)
 
-**Optional Fields:**
+    > The path or name of the program (iex. g++ or /usr/opt/compiler)
+
+**Optional Fields**
 
 -   arguments
-    > The arguments to be passed to the command
+
+    > The arguments to be passed to the command (Array)
