@@ -7,14 +7,13 @@
 
 import chalk from 'chalk';
 import { existsSync, lstatSync, readFileSync } from 'fs';
-import { readdir, readFile } from 'fs/promises';
+import { readdir } from 'fs/promises';
 import inquirer from 'inquirer';
 import path, { extname, join } from 'path';
-import { argv, config } from 'process';
+import { argv } from 'process';
 import { parse as parseFile } from '../lib/parser';
 import { version } from '../../package.json';
-import { describe, generateUsages, TextboxBuilder } from '../lib/utils';
-import markdownToTxt from 'markdown-to-txt';
+import { generateUsages, TextboxBuilder } from '../lib/utils';
 import { format } from 'util';
 import { timer } from '../lib/timer';
 import { Module } from '../lib/types';
