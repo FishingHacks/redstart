@@ -69,6 +69,7 @@ export default {
     optionalFields: [],
     requiredFields: [{
         name: 'packageManager',
-        description: 'The package manager to use. Either yarn, pnpm or npm'
+        description: 'The package manager to use. Either yarn, pnpm or npm',
+        type: 'string'
     }]
 } as Module;

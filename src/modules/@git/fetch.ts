@@ -57,7 +57,10 @@ export default {
             await new Promise((r) => setTimeout(r, 1000));
             if (config.branch) {
                 const cmd = 'checkout ' + config.branch;
-                if (spawnSync('git', ['checkout', config.branch as string]).status !== 0)
+                if (
+                    spawnSync('git', ['checkout', config.branch as string])
+                        .status !== 0
+                )
                     console.error(
                         chalk.redBright(
                             '[!] Branch ' + config.branch + ' not found!'
@@ -74,12 +77,19 @@ export default {
         });
     },
     description: 'Fetch a remote repository',
-    requiredFields: [{
-        name: 'repository',
-        description: 'The URL of the git repository\nUsually ends in .git'
-    }],
-optionalFields: [{
-    name: 'branch',
-    description: 'The branch to pull from, required when there are multiple branches'
-}]
+    requiredFields: [
+        {
+            name: 'repository',
+            description: 'The URL of the git repository\nUsually ends in .git',
+            type: 'string',
+        },
+    ],
+    optionalFields: [
+        {
+            name: 'branch',
+            description:
+                'The branch to pull from, required when there are multiple branches',
+            type: 'string',
+        },
+    ],
 } as Module;

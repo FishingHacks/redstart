@@ -105,21 +105,26 @@ export default {
             name: 'optimizations',
             description:
                 'The optimization level (standard: 1). Available options: 0, 1, 2, 3, fast, g and s',
+            type: 'string',
+            choices: ['0', '1', '2', '3', 'fast', 'g', 's'],
         },
         {
             name: 'buildDirectory',
             description: 'The directory, you want to have your executable in',
+            type: 'string',
         },
     ],
     requiredFields: [
         {
             name: 'fileName',
             description: 'The name of the runnable executable',
+            type: 'string',
         },
         {
             name: 'sourceDirectory',
             description:
                 'The directory that houses all your .c, .h, .cpp and .hpp files',
+            type: 'string',
         },
     ],
 } as Module;

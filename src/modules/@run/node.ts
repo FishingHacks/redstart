@@ -74,16 +74,19 @@ export default {
         {
             name: 'mainFile',
             description: 'The mainfile. It get\'s executed on run',
+            type: 'string'
         },
     ],
     optionalFields: [
         {
             name: 'arguments',
             description: 'The arguments to the program, you\'re running. Type: Array',
+            type: 'string'
         },
         {
             name: 'envFile',
             description: 'The environment file. It get\'s parsed and passed into the environment.\nFileformat: .env',
+            type: 'string'
         },
     ],
 } as Module;

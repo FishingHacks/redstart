@@ -15,7 +15,8 @@ export default {
             is.set(config.language) &&
             ['javascript', 'js', 'ts', 'typescript', ''].includes(
                 config.language.toString()
-            ) && (!is.set || is.arr(config.additional))
+            ) &&
+            (!is.set || is.arr(config.additional))
         );
     },
     initiate({ config, cwd }) {
@@ -35,14 +36,23 @@ export default {
         writeFileSync(join(cwd, '.gitignore'), gitignore.join('\n'));
     },
     description: 'Configure the .gitignore file',
-    requiredFields: [{
-        name: 'language',
-        description: 'The language you intent on writing your program in. It will select the preset for the language. Leave empty to use none.\nSupported values: javascript, js, typescript, ts'
-    }],
-    optionalFields: [{
-        name: 'additional',
-        description: 'The additional .gitignore values. Type: Array\nExample:\nadditional: "*.mjs" ".rscache"'
-    }]
+    requiredFields: [
+        {
+            name: 'language',
+            description:
+                'The language you intent on writing your program in. It will select the preset for the language. Leave empty to use none.\nSupported values: javascript, js, typescript, ts',
+            type: 'string',
+            choices: ['', 'javascript', 'typescript'],
+        },
+    ],
+    optionalFields: [
+        {
+            name: 'additional',
+            description:
+                'The additional .gitignore values. Type: Array\nExample:\nadditional: "*.mjs" ".rscache"',
+            type: 'string',
+        },
+    ],
 } as Module;
 
 function getGitIgnoreForLanguage(language: string) {

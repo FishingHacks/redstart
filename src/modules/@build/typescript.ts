@@ -84,18 +84,22 @@ export default {
             name: 'configFile',
             description:
                 'The path to the configuration file for the TypeScript Compiler (usually tsconfig.json)',
+            type: 'string',
         },
         {
             name: 'sourceDirectory',
             description: 'The Directory that houses all your typescript-files',
+            type: 'string',
         },
         {
             name: 'buildDirectory',
-            description: 'The Directory the compiled files get put in'
+            description: 'The Directory the compiled files get put in',
+            type: 'string',
         },
         {
             name: 'allowJSFiles',
-            description: 'Allow javascript files to be compiled (true/false)'
+            description: 'Allow javascript files to be compiled (true/false)',
+            type: 'boolean',
         },
     ],
 } as Module;

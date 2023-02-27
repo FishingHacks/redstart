@@ -29,10 +29,12 @@ export default {
     description: 'Use any build system to build your application.',
     optionalFields: [{
         name: 'arguments',
-        description: 'The arguments to be passed to the command (Array)'
+        description: 'The arguments to be passed to the command (Array)',
+        type: 'string'
     }],
     requiredFields: [{
         name: 'command',
-        description: 'The path or name of the program (iex. g++ or /usr/opt/compiler)'
+        description: 'The path or name of the program (iex. g++ or /usr/opt/compiler)',
+        type: 'string'
     }]
 } as Module;

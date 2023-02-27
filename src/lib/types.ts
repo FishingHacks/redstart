@@ -29,6 +29,16 @@ export interface Module {
         redstartConfig: RedstartConfig;
     }) => void | Promise<void>;
     description: string;
-    requiredFields: { name: string; description: string }[];
-    optionalFields: { name: string; description: string }[];
+    requiredFields: {
+        name: string;
+        description: string;
+        type: 'number' | 'boolean' | 'string';
+        choices?: string[];
+    }[];
+    optionalFields: {
+        name: string;
+        description: string;
+        type: 'number' | 'boolean' | 'string';
+        choices?: string[];
+    }[];
 }

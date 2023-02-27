@@ -19,30 +19,52 @@ const translator: Record<string, chalk.Chalk> = {
 };
 
 export default {
-    validate({config}) {
+    validate({ config }) {
         return (
             is.set(config.message) &&
             is.str(config.message) &&
             config.message !== '' &&
-            (!is.set(config.color) || isChecker(config.color).set().str().pipe(el => translator[el] !== undefined).isValid)
+            (!is.set(config.color) ||
+                isChecker(config.color)
+                    .set()
+                    .str()
+                    .pipe((el) => translator[el] !== undefined).isValid)
         );
     },
     initiate({ config }) {
-        if (config.color && Object.keys(translator).includes(config.color.toString()))
+        if (
+            config.color &&
+            Object.keys(translator).includes(config.color.toString())
+        )
             return console.log(
-                translator[config.color as string](
-                    config.message
-                )
+                translator[config.color as string](config.message)
             );
         else return console.log(config.message);
     },
     description: 'Write to stdout',
-    optionalFields: [{
-        name: 'color',
-        description: 'The color of the message\nAvailable options: red, green, yellow, blue, white, black, purple and aqua'
-    }],
-    requiredFields: [{
-        name: 'message',
-        description: 'The message to write'
-    }]
+    optionalFields: [
+        {
+            name: 'color',
+            description:
+                'The color of the message\nAvailable options: red, green, yellow, blue, white, black, purple and aqua',
+            type: 'string',
+            choices: [
+                'red',
+                'green',
+                'yellow',
+                'blue',
+                'white',
+                'black',
+                'purple',
+                'aqua',
+            ],
+        },
+    ],
+    requiredFields: [
+        {
+            name: 'message',
+            description: 'The message to write',
+            type: 'string',
+        },
+    ],
 } as Module;
