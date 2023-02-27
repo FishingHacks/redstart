@@ -58,7 +58,7 @@ export default {
             ),
         ].filter((el) => el !== undefined) as string[];
 
-        describe('Running tsc', () => {
+        const end = start('running tsc', true);
             if (redstartConfig.dbgprint === 'true')
                 console.log('Running tsc ' + args.join(' ') + ' in ' + cwd);
             const compilerProcess = spawnSync('tsc', args, { cwd });
@@ -75,7 +75,7 @@ export default {
             } else {
                 console.log(chalk.greenBright('[+] Compilation successful'));
             }
-        });
+        end();
     },
     description: 'Compile a typescript project',
     requiredFields: [],

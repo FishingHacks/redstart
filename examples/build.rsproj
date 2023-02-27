@@ -4,9 +4,5 @@ settings {
 
 build {
     @build/typescript {
-        tsFilePath: "config/tsconfig.json"
-        sourceDirectory: "src"
-        buildDirectory: "dist"
-        allowJSFiles: true
     }
 }

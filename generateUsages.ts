@@ -6,7 +6,10 @@ const redstartConfig = `[<- Back](./index.md)
 > Print debuginformations about the execution of redstart
 
 - cwd
-> Change the cwd (Current working directory), relative to the directory, the .rsproj file is in`;
+> Change the cwd (Current working directory), relative to the directory, the .rsproj file is in
+
+- profiling
+> Enable profiling`;
 
 import { mkdir, writeFile as _writeFile } from 'fs/promises';
 import { extname, join, sep } from 'path';

@@ -17,6 +17,7 @@ import { generateUsages, TextboxBuilder } from '../lib/utils';
 import { format } from 'util';
 import { timer } from '../lib/timer';
 import { Module } from '../lib/types';
+import { setup } from '../lib/setup';
 
 const oldConsoleLog = console.log;
 const oldConsoleError = console.error;
@@ -93,6 +94,11 @@ const { prompt } = inquirer;
                     '- Get the avilable modules for redstart'
                 )}`
             )
+            .addLine(`${chalk.redBright('redstart')} ${chalk.yellow(
+                '-s --setup'
+            )} ${chalk.greenBright(
+                '- Create a new .rsproj file'
+            )}`)
             .addLine('')
             .setFooter(
                 `${chalk.redBright('Redstart')} v${chalk.blueBright(version)}`
@@ -141,6 +147,7 @@ const { prompt } = inquirer;
             process.exit(1);
         }
     }
+    if (['-s', '--s', '-setup', '--setup'].includes(args[0])) return setup();
     if (['-v', '-version', '--v', '--version'].includes(args[0])) {
         return console.log(`${chalk.redBright('Redstart')} v${version}`);
     }
@@ -213,7 +220,7 @@ const { prompt } = inquirer;
     const redstartConfig = config.settings;
     const modules = config.modules;
 
-    if (redstartConfig.dbgprint) process.on('beforeExit', () => timer.print());
+    if (redstartConfig.profiling) process.on('beforeExit', () => timer.print());
 
     if (redstartConfig.dbgprint)
         oldConsoleLog(
@@ -319,8 +326,8 @@ const { prompt } = inquirer;
             config: options,
             cwd: join(process.cwd(), cwd),
             redstartConfig,
-            start(name) {
-                return timer.start('└─« ' + name);
+            start(name, last?: boolean) {
+                return timer.start((last ? '└─« ' : '├─« ') + name);
             },
         });
 

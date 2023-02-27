@@ -226,7 +226,7 @@ function parseCompilationJob(value: string, jobs: Jobs): Job {
             if (values[ip] !== '}')
                 printError('Expected }, but found nothing', values, ip);
             const config = parseBlock(values.slice(startip, ip).join(''));
-            let cwd = process.cwd();
+            let cwd = '';
             if (config[cwd] !== undefined) {
                 const joinWith = config[cwd].toString();
                 if (joinWith.startsWith('/')) cwd = joinWith;

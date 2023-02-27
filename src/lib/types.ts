@@ -23,7 +23,7 @@ export interface Module {
         redstartConfig: RedstartConfig;
     }) => boolean | Promise<boolean>;
     initiate: (value: {
-        start: (name: string) => () => void;
+        start: (name: string, last?: boolean) => () => void;
         config: Config;
         cwd: string;
         redstartConfig: RedstartConfig;
