@@ -9,11 +9,11 @@ import chalk from 'chalk';
 import { existsSync, lstatSync, readFileSync } from 'fs';
 import { readdir, readFile } from 'fs/promises';
 import inquirer from 'inquirer';
-import path, { join } from 'path';
+import path, { extname, join } from 'path';
 import { argv, config } from 'process';
 import { parse as parseFile } from '../lib/parser';
 import { version } from '../../package.json';
-import { describe, TextboxBuilder } from '../lib/utils';
+import { describe, generateUsages, TextboxBuilder } from '../lib/utils';
 import markdownToTxt from 'markdown-to-txt';
 import { format } from 'util';
 import { timer } from '../lib/timer';
@@ -121,7 +121,10 @@ const { prompt } = inquirer;
         return;
     }
     if (['-u', '--usage'].includes(args[0])) {
-        let file = join(sourcePath, '../usage/' + args[1] + '.md');
+        let file = join(
+            sourcePath,
+            './modules/' + args[1] + extname(__filename)
+        );
         if (!existsSync(file))
             return console.log(
                 chalk.redBright(
@@ -129,35 +132,15 @@ const { prompt } = inquirer;
                 )
             );
 
-        const lines = markdownToTxt(
-            (await readFile(file))
-                .toString()
-                .replaceAll('[<- Back](../index.md)', '')
-                .replaceAll('# ' + args[1], '')
-                .trimStart()
-                .replaceAll(/^ *> *([^\n]+)/gm, '\x1B[90m   $1')
-                .replaceAll(/^ *- *([^\n]+)/gm, '\n\x1B[36m $1')
-        )
-            .replaceAll('\n\n', '\n')
-            .replace('Usage', '')
-            .replace(
-                'Required Fields:',
-                chalk.bold(chalk.greenBright('\nRequired Fields:'))
-            )
-            .replace(
-                'Optional Fields:',
-                chalk.bold(chalk.greenBright('\nOptional Fields:'))
-            )
-            .split('\n')
-            .map((el) => el + (el.includes('\x1B') ? '\x1B[39m' : ''));
-        return new TextboxBuilder()
-            .addLines(lines)
-            .setTitle(chalk.yellow(args[1]))
-            .setFooter(
-                `${chalk.redBright('Redstart')} v${chalk.blueBright(version)}`
-            )
-            .setMinLength(50)
-            .log();
+        try {
+            const module = require(file)?.default as Module;
+            if (!module) throw new Error();
+            console.log(generateUsages(module, args[1]));
+            process.exit(0);
+        } catch {
+            console.log(chalk.redBright('[!] Module not found'));
+            process.exit(1);
+        }
     }
     if (['-v', '-version', '--v', '--version'].includes(args[0])) {
         return console.log(`${chalk.redBright('Redstart')} v${version}`);

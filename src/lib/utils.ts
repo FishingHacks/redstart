@@ -1,6 +1,9 @@
+import chalk from 'chalk';
 import { lstat, readdir, readlink } from 'fs/promises';
 import { createSpinner as _createSpinner } from 'nanospinner';
 import { join } from 'path';
+import { Module } from './types';
+import { version } from '../../package.json';
 
 /**
  * @license GPL3
@@ -193,6 +196,8 @@ export class TextboxBuilder {
     private lines: ({ type: 'divider' } | string)[] = [];
     private minLength = 0;
     private footer: string = '';
+    private padl: number = 0;
+    private padr: number = 0;
 
     setTitle(title: string) {
         this.title = title;
@@ -202,20 +207,62 @@ export class TextboxBuilder {
         this.footer = footer;
         return this;
     }
+    paddingLeft(padding: number) {
+        if (padding < 0)
+            throw new Error('Invalid padding: negative left padding');
+        if (Math.floor(padding) !== padding)
+            throw new Error('Invalid padding: non-int left padding');
+        this.padl = padding;
+        return this;
+    }
+    paddingRight(padding: number) {
+        if (padding < 0)
+            throw new Error('Invalid padding: negative right padding');
+        if (Math.floor(padding) !== padding)
+            throw new Error('Invalid padding: non-int right padding');
+        this.padr = padding;
+        return this;
+    }
+    padding(padding: { left?: number; right?: number }) {
+        if (padding.left !== undefined) this.paddingLeft(padding.left);
+        if (padding.right !== undefined) this.paddingRight(padding.right);
+        return this;
+    }
+    getPaddingLeft() {
+        return this.padl;
+    }
+    getPaddingRight() {
+        return this.padr;
+    }
+    getPadding() {
+        return {
+            left: this.padl,
+            right: this.padr,
+        };
+    }
     getFooter() {
         return this.footer;
     }
     addLine(line: string) {
-        if (line.includes('\n')) return this;
+        if (line.includes('\n')) throw new Error('Line contains a new line');
         this.lines.push(line);
         return this;
     }
     addLines(lines: string | string[]) {
+        if (
+            typeof lines === 'object' &&
+            lines.find((el) => el.includes('\n') || el.includes('\r'))
+        )
+            throw new Error('Found a new line in the lines');
         if (typeof lines === 'object') this.lines.push(...lines);
         else this.lines.push(...lines.split('\n'));
         return this;
     }
     setMinLength(length: number) {
+        if (length < 0)
+            throw new Error('Invalid minlength: negative minlength');
+        if (Math.floor(length) !== length)
+            throw new Error('Invalid minlength: non-int minlength');
         this.minLength = length;
         return this;
     }
@@ -238,6 +285,8 @@ export class TextboxBuilder {
         return this;
     }
     build() {
+        this.minLength -= Math.abs(this.padl);
+        this.minLength -= Math.abs(this.padr);
         const stringLines = this.lines.filter(
             (el) => typeof el === 'string'
         ) as string[];
@@ -273,9 +322,13 @@ export class TextboxBuilder {
 
             .map(
                 (el) =>
-                    (el.startsWith('─') ? '├─' : '│ ') +
+                    (el.startsWith('─')
+                        ? '├─' + strMul('─', this.padl)
+                        : '│ ' + strMul(' ', this.padl)) +
                     el +
-                    (el.endsWith('─') ? '─┤\n' : ' │\n')
+                    (el.endsWith('─')
+                        ? strMul('─', this.padr) + '─┤\n'
+                        : strMul(' ', this.padr) + ' │\n')
             )
             .join('');
         const footerSize = this.footer.replaceAll(
@@ -287,17 +340,23 @@ export class TextboxBuilder {
             ''
         ).length;
 
-        return `┌──${titleSize > 0 ? '« ' : '─'}${this.title}${
-            titleSize > 0 ? ' »' : '─'
-        }${strMul(
+        return `┌──${strMul('─', this.padl)}${titleSize > 0 ? '« ' : '─'}${
+            this.title
+        }${titleSize > 0 ? ' »' : '─'}${strMul(
             '─',
             innerSize - titleSize - (titleSize > 0 ? 4 : 0)
-        )}┐\n${buildLines}└──${footerSize > 0 ? '« ' : '─'}${this.footer}${
+        )}${strMul('─', this.padr)}┐\n${buildLines}└──${strMul(
+            '─',
+            this.padl
+        )}${footerSize > 0 ? '« ' : '─'}${this.footer}${
             footerSize > 0 ? ' »' : '─'
-        }${strMul('─', innerSize - footerSize - (footerSize > 0 ? 4 : 2))}┘`;
+        }${strMul(
+            '─',
+            innerSize - footerSize - (footerSize > 0 ? 4 : 2)
+        )}${strMul('─', this.padr)}┘`;
     }
-    log() {
-        return console.log(this.build());
+    log(loggingFunction?: (message: string) => any) {
+        (loggingFunction || console.log)(this.build());
     }
 }
 
@@ -546,4 +605,44 @@ export async function resolveSymlink(file: string): Promise<string | null> {
         else symlink = await readlink(symlink);
     }
     return null;
+}
+
+export function generateUsages(module: Module, name: string) {
+    const builder = new TextboxBuilder()
+        .setTitle(chalk.yellow(chalk.bold(name)))
+        .setMinLength(100)
+        .setFooter(
+            `${chalk.redBright('Redstart')} v${chalk.blueBright(version)}`
+        )
+        .addLines(module.description.split('\n'))
+        .addLine('')
+        .paddingLeft(2)
+        .paddingRight(2);
+
+    if (module.requiredFields.length > 0) {
+        builder.addLine(chalk.bold('Required Fields'));
+        for (const o of module.requiredFields) {
+            builder.addLine(chalk.cyan(o.name));
+            builder.addLines(
+                o.description.split('\n').map((el) => '  ' + chalk.gray(el))
+            );
+            builder.addLine('');
+        }
+    }
+
+    if (module.optionalFields.length > 0) {
+        builder.addLine(chalk.bold('Optional Fields'));
+        for (const o of module.optionalFields) {
+            builder.addLine(chalk.cyan(o.name));
+            builder.addLines(
+                o.description.split('\n').map((el) => '  ' + chalk.gray(el))
+            );
+            builder.addLine('');
+        }
+    }
+    builder.removeLine(true);
+    return applyPadding(builder.build(), {
+        left: 1,
+        right: 2,
+    });
 }
