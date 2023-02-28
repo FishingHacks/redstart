@@ -1,3 +1,7 @@
+/**
+ * @license GPL3
+ * @author FishingHacks <https://github.com/FishingHacks>
+ */
 import chalk from 'chalk';
 import { lstat, readdir, readlink } from 'fs/promises';
 import { createSpinner as _createSpinner } from 'nanospinner';
@@ -5,10 +9,6 @@ import { join } from 'path';
 import { Module } from './types';
 import { version } from '../../package.json';
 
-/**
- * @license GPL3
- * @author FishingHacks <https://github.com/FishingHacks>
- */
 
 export const is = {
     exists: (v: any) => v !== undefined,
@@ -135,32 +135,6 @@ export function stringify(value: any): string {
     return value.toString();
 }
 
-export function calculateLengths<T extends string>(
-    args: Record<T, any>[],
-    names?: T[]
-): Record<T, number> {
-    const val: Record<string, number> = {};
-    if (args.length < 1 && !names)
-        throw new Error(
-            'A length of at least 1 or the names are required in order to calculate the lengths'
-        );
-    for (const k in args[0] || names) val[k] = k.length;
-
-    for (const v of args)
-        for (const k in v) {
-            const value = stringify(v[k]);
-            if (val[k] < value.length) val[k] = value.length;
-        }
-
-    return val;
-}
-
-export function strMul(s: string, i: number) {
-    let str = '';
-    for (let j = 0; j < i; j++) str += s;
-    return str;
-}
-
 export function createTextbox(title: string, contents: string) {
     const lines = contents.split('\n');
     const innerSize = Math.max(
@@ -175,20 +149,39 @@ export function createTextbox(title: string, contents: string) {
         )
     );
 
-    let textbox = `┌──${title}${strMul('─', innerSize - title.length)}┐\n`;
+    let textbox = `┌──${title}${'─'.repeat(innerSize - title.length)}┐\n`;
     textbox += lines
         .map(
             (el) =>
-                `${el.startsWith('─') ? '├─' : '│ '}${el}${strMul(
-                    ' ',
+                `${el.startsWith('─') ? '├─' : '│ '}${el}${' '.repeat(
                     innerSize -
                         el.replaceAll(/\x1B\[[0-9]+(;[0-9]+)*m/g, '').length
                 )}${el.endsWith('─') ? '─┤' : ' │'}\n`
         )
         .join('');
-    textbox += '└' + strMul('─', innerSize + 2) + '┘';
+    textbox += '└' + '─'.repeat(innerSize + 2) + '┘';
 
     return textbox;
+}
+
+export function calculateLengths<T extends string>(
+    args: Record<T, any>[],
+    names?: T[]
+): Record<T, number> {
+    const val: Record<string, number> = {};
+    if (args.length < 1 && !names)
+        throw new Error(
+            'A length of at least 1 or the names are required in order to calculate the lengths'
+        );
+    for (const k in args[0] || names) val[k] = k.length;
+
+    for (const v of args)
+        for (const k in v) {
+            const value = '' + v[k];
+            if (val[k] < value.length) val[k] = value.length;
+        }
+
+    return val;
 }
 
 export class TextboxBuilder {
@@ -309,26 +302,25 @@ export class TextboxBuilder {
                 if (typeof el === 'string')
                     return (
                         el +
-                        strMul(
-                            ' ',
+                        ' '.repeat(
                             innerSize -
                                 el.replaceAll(/\x1B\[[0-9]+(;[0-9]+)*m/g, '')
                                     .length
                         )
                     );
-                else if (el.type === 'divider') return strMul('─', innerSize);
-                else return strMul(' ', innerSize);
+                else if (el.type === 'divider') return '─'.repeat(innerSize);
+                else return ' '.repeat(innerSize);
             })
 
             .map(
                 (el) =>
                     (el.startsWith('─')
-                        ? '├─' + strMul('─', this.padl)
-                        : '│ ' + strMul(' ', this.padl)) +
+                        ? '├─' + '─'.repeat(this.padl)
+                        : '│ ' + ' '.repeat(this.padl)) +
                     el +
                     (el.endsWith('─')
-                        ? strMul('─', this.padr) + '─┤\n'
-                        : strMul(' ', this.padr) + ' │\n')
+                        ? '─'.repeat(this.padr) + '─┤\n'
+                        : ' '.repeat(this.padr) + ' │\n')
             )
             .join('');
         const footerSize = this.footer.replaceAll(
@@ -340,38 +332,34 @@ export class TextboxBuilder {
             ''
         ).length;
 
-        return `┌──${strMul('─', this.padl)}${titleSize > 0 ? '« ' : '─'}${
+        return `┌──${'─'.repeat(this.padl)}${titleSize > 0 ? '« ' : '─'}${
             this.title
-        }${titleSize > 0 ? ' »' : '─'}${strMul(
-            '─',
+        }${titleSize > 0 ? ' »' : '─'}${'─'.repeat(
             innerSize - titleSize - (titleSize > 0 ? 4 : 0)
-        )}${strMul('─', this.padr)}┐\n${buildLines}└──${strMul(
-            '─',
-            this.padl
-        )}${footerSize > 0 ? '« ' : '─'}${this.footer}${
-            footerSize > 0 ? ' »' : '─'
-        }${strMul(
-            '─',
+        )}${'─'.repeat(this.padr)}┐\n${buildLines}└──${'─'.repeat(this.padl)}${
+            footerSize > 0 ? '« ' : '─'
+        }${this.footer}${footerSize > 0 ? ' »' : '─'}${'─'.repeat(
             innerSize - footerSize - (footerSize > 0 ? 4 : 2)
-        )}${strMul('─', this.padr)}┘`;
+        )}${'─'.repeat(this.padr)}┘`;
     }
     log(loggingFunction?: (message: string) => any) {
         (loggingFunction || console.log)(this.build());
     }
 }
 
-function setStrAtPos(str: string, pos: number, char: string) {
-    if (char.length < 1) return str;
-    char = char[0];
-    return str.substring(0, pos) + char + str.substring(pos + 1);
-}
-
+/**
+ * @param header The header of the table
+ * @param keys Supply all entry names, determines the position of the entry name
+ * @param data The tabledata
+ * @param differentiateLines Determines if there's a line between every value
+ * @returns The constructed table
+ */
 export function createTable<T extends string>(
     header: string,
     keys: T[],
     data: { [Key in T]: string | number | boolean }[],
     differentiateLines: boolean | undefined = false
-) {
+): string {
     const rowKeys = Object.keys(data);
     if (rowKeys.length < 1 || keys.length < 1) return '┌──┐\n└──┘';
     const rows = Object.values(data);
@@ -386,8 +374,7 @@ export function createTable<T extends string>(
             ) || 0;
     let str = '┌──« ' + header + ' »──';
     for (const c of keys)
-        str += strMul(
-            '─',
+        str += '─'.repeat(
             ((columnLengths[c] as number | undefined) || 0) +
                 3 -
                 (c === keys[0] ? str.length : 0)
@@ -396,15 +383,14 @@ export function createTable<T extends string>(
     let i = 0;
     for (const c of keys) {
         const length = (columnLengths[c] as number | undefined) || 0;
-        if (str[i] === '─') str = setStrAtPos(str, i, '┬');
+        if (str[i] === '─') str = (str as any)[i] = '┬';
         i += 3 + length;
     }
 
     str += '│ ';
     for (const c of keys) {
         str += c;
-        str += strMul(
-            ' ',
+        str += ' '.repeat(
             ((columnLengths[c] as number | undefined) || 1) - c.length
         );
         str += ' │ ';
@@ -415,8 +401,7 @@ export function createTable<T extends string>(
         str += '├';
         for (const c of keys) {
             str +=
-                strMul(
-                    '─',
+                '─'.repeat(
                     ((columnLengths[c] as number | undefined) || 1) + 2
                 ) + '┼';
         }
@@ -429,8 +414,7 @@ export function createTable<T extends string>(
             str += '├';
             for (const c of keys) {
                 str +=
-                    strMul(
-                        '─',
+                    '─'.repeat(
                         ((columnLengths[c] as number | undefined) || 1) + 2
                     ) + '┼';
             }
@@ -442,8 +426,7 @@ export function createTable<T extends string>(
             const c = keys[j];
             str +=
                 (columns[c]?.[i] || '') +
-                strMul(
-                    ' ',
+                ' '.repeat(
                     ((columnLengths[c] as number | undefined) || 0) -
                         (columns[c]?.[i] || '').length
                 ) +
@@ -459,8 +442,7 @@ export function createTable<T extends string>(
         str += '\n';
     }
     str += '└';
-    for (const c of keys)
-        str += '─' + strMul('─', columnLengths[c] || 0) + '─┴';
+    for (const c of keys) str += '─' + '─'.repeat(columnLengths[c] || 0) + '─┴';
     str = str.substring(0, str.length - 2);
     str += '─┘';
 
@@ -560,21 +542,29 @@ export interface PaddingOptions {
     bottom?: number;
 }
 
+/**
+ * Apply some padding to a string
+ *
+ * @param str The string to apply the padding to
+ * @param padding The padding
+ * @returns the padding-applied string
+ */
 export function applyPadding(str: string, padding?: PaddingOptions) {
     return (
-        strMul('\n', padding?.top || 0) +
+        '\n'.repeat(padding?.top || 0) +
         str
             .split('\n')
             .map(
                 (el) =>
-                    strMul(' ', padding?.left || 0) +
+                    ' '.repeat(padding?.left || 0) +
                     el +
-                    strMul(' ', padding?.right || 0)
+                    ' '.repeat(padding?.right || 0)
             )
             .join('\n') +
-        strMul('\n', padding?.bottom || 0)
+        '\n'.repeat(padding?.bottom || 0)
     );
 }
+
 export async function tree(directory: string): Promise<string[]> {
     const to_scan = [directory];
     const discovered_files: string[] = [];

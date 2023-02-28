@@ -26,7 +26,7 @@
  */
 import { writeFileSync } from 'fs';
 import { join } from 'path';
-import { applyPadding, calculateLengths, createTable, strMul } from './utils';
+import { applyPadding, calculateLengths, createTable } from './utils';
 
 class Timer {
     private _values: {
@@ -108,10 +108,10 @@ class Timer {
             length: formatTimelength(end.getTime() - this._start),
         });
         args[args.length - 2] = {
-            name: strMul('─', lengths.name),
-            end: strMul('─', lengths.end),
-            start: strMul('─', lengths.start),
-            length: strMul('─', lengths.length),
+            name: '─'.repeat(lengths.name),
+            end: '─'.repeat(lengths.end),
+            start: '─'.repeat(lengths.start),
+            length: '─'.repeat(lengths.length),
         };
 
         console.log(
